@@ -207,6 +207,13 @@ class Distribution(BaseDistribution):
         # until upstream can improve the protocol. (python/cpython#94952)
         return cast(email.message.Message, self._dist.metadata)
 
+    def iter_default_extras(self) -> Iterable[NormalizedName]:
+        return [
+            canonicalize_name(extra)
+            for extra in self.metadata.get_all("Default-Extra", [])
+        ]
+
+
     def iter_provided_extras(self) -> Iterable[NormalizedName]:
         return [
             canonicalize_name(extra)
