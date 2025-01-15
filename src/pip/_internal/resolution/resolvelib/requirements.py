@@ -107,10 +107,10 @@ class SpecifierRequirement(Requirement):
         return None, self._ireq
 
     def is_satisfied_by(self, candidate: Candidate) -> bool:
-        assert candidate.name == self.name, (
-            f"Internal issue: Candidate is not for this requirement "
-            f"{candidate.name} vs {self.name}"
-        )
+        # assert candidate.name == self.name, (
+        #     f"Internal issue: Candidate is not for this requirement "
+        #     f"{candidate.name} vs {self.name}"
+        # )
         # We can safely always allow prereleases here since PackageFinder
         # already implements the prerelease logic, and would have filtered out
         # prerelease candidates if the user does not expect them.

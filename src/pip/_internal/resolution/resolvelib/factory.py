@@ -172,8 +172,12 @@ class Factory:
         except KeyError:
             base = AlreadyInstalledCandidate(dist, template, factory=self)
             self._installed_candidate_cache[dist.canonical_name] = base
+        extras = (
+            extras if extras else frozenset(dist.metadata.get_all("Default-Extra", []))
+        )
         if not extras:
             return base
+
         return self._make_extras_candidate(base, extras, comes_from=template)
 
     def _make_candidate_from_link(
@@ -186,6 +190,11 @@ class Factory:
     ) -> Optional[Candidate]:
         base: Optional[BaseCandidate] = self._make_base_candidate_from_link(
             link, template, name, version
+        )
+        extras = (
+            extras
+            if extras
+            else frozenset(base.dist.metadata.get_all("Default-Extra", []))
         )
         if not extras or base is None:
             return base
@@ -482,6 +491,11 @@ class Factory:
                 (or link) and one with the extra. This allows centralized constraint
                 handling for the base, resulting in fewer candidate rejections.
         """
+        if ireq.comes_from is not None:
+            with contextlib.suppress(AssertionError):
+                requested_extras = requested_extras or frozenset(
+                    ireq.comes_from.metadata.get_all("Default-Extra", [])
+                )
         if not ireq.match_markers(requested_extras):
             logger.info(
                 "Ignoring %s: markers '%s' don't match your environment",

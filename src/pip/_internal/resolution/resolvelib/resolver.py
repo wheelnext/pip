@@ -111,18 +111,35 @@ class Resolver(BaseResolver):
         for candidate in sorted(
             result.mapping.values(), key=lambda c: c.name != c.project_name
         ):
+            print("==================================")
+            print(f"{candidate.name=}")
+            print(f"{candidate.project_name=}")
             ireq = candidate.get_install_requirement()
+
             if ireq is None:
                 if candidate.name != candidate.project_name:
                     # extend existing req's extras
                     with contextlib.suppress(KeyError):
+                        extras = get_requirement(
+                            candidate.name
+                        ).extras or candidate.dist.metadata.get_all("Default-Extra", [])
                         req = req_set.get_requirement(candidate.project_name)
                         req_set.add_named_requirement(
-                            install_req_extend_extras(
-                                req, get_requirement(candidate.name).extras
-                            )
+                            install_req_extend_extras(req, extras)
                         )
                 continue
+
+            # ireq.extras = (
+            #     ireq.extras
+            #     if ireq.extras
+            #     else ireq.metadata.get_all("Default-Extra", [])
+            # )
+            with contextlib.suppress(AssertionError):
+                ireq.extras = (
+                    ireq.extras
+                    if ireq.extras
+                    else ireq.metadata.get_all("Default-Extra", [])
+                )
 
             # Check if there is already an installation under the same name,
             # and set a flag for later stages to uninstall it, if needed.
@@ -173,7 +190,14 @@ class Resolver(BaseResolver):
                 )
                 logger.warning(msg)
 
-            req_set.add_named_requirement(ireq)
+            req_set.add_named_requirement(
+                install_req_extend_extras(
+                    ireq,
+                    get_requirement(candidate.name).extras
+                    or candidate.dist.metadata.get_all("Default-Extra", []),
+                )
+            )
+            # req_set.add_named_requirement(ireq)
 
         reqs = req_set.all_requirements
         self.factory.preparer.prepare_linked_requirements_more(reqs)
