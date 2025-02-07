@@ -251,6 +251,12 @@ class _InstallRequirementBackedCandidate(Candidate):
     def iter_dependencies(self, with_requires: bool) -> Iterable[Optional[Requirement]]:
         requires = self.dist.iter_dependencies() if with_requires else ()
         for r in requires:
+            try:
+                self._ireq.extras = self._ireq.extras or frozenset(
+                    self._ireq.metadata.get_all("Default-Extra", [])
+                )
+            except AssertionError:
+                pass
             yield from self._factory.make_requirements_from_spec(str(r), self._ireq)
         yield self._factory.make_requires_python_requirement(self.dist.requires_python)
 

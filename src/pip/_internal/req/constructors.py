@@ -312,12 +312,9 @@ def parse_req_from_line(name: str, line_source: Optional[str]) -> RequirementPar
     if marker_sep in name:
         name, markers_as_string = name.split(marker_sep, 1)
         markers_as_string = markers_as_string.strip()
-        if not markers_as_string:
-            markers = None
-        else:
-            markers = Marker(markers_as_string)
     else:
-        markers = None
+        markers_as_string = ""
+
     name = name.strip()
     req_as_string = None
     path = os.path.normpath(os.path.abspath(name))
@@ -380,6 +377,10 @@ def parse_req_from_line(name: str, line_source: Optional[str]) -> RequirementPar
     else:
         req = None
 
+    if not markers_as_string:
+        markers = None
+    else:
+        markers = Marker(markers_as_string)
     return RequirementParts(req, link, markers, extras)
 
 
