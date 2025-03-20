@@ -581,14 +581,11 @@ class CandidateEvaluator:
                     found_candidate = True
                     break
 
-
         # fall back on default behavior
         if not found_candidate:
             applicable_candidates = self.get_applicable_candidates(candidates)
             best_candidate = self.sort_best_candidate(applicable_candidates)
 
-        logger.debug(f"compute_best_candidate: {best_candidate}")
-        logger.debug(f"out of: {candidates}")
         return BestCandidateResult(
             candidates,
             applicable_candidates=applicable_candidates,
@@ -954,7 +951,6 @@ class PackageFinder:
             hashes=hashes,
         )
         best_candidate = best_candidate_result.best_candidate
-        logger.debug(f"***best_candidate: {best_candidate}")
 
         installed_version: Optional[_BaseVersion] = None
         if req.satisfied_by is not None:

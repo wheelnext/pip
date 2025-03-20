@@ -418,7 +418,6 @@ class LinkCollector:
         index_urls = [options.index_url] + options.extra_index_urls
         index_priority = False
         if (options.index_groups is not None and len(options.index_groups) > 0):
-            print(options.index_groups[0])
             index_urls = options.index_groups[0].split(",")
             index_priority = True
             
