@@ -26,6 +26,7 @@ from pip._internal.index.collector import (
     parse_links,
 )
 from pip._internal.index.sources import _FlatDirectorySource, _IndexDirectorySource
+from pip._internal.index.index_group import IndexGroup
 from pip._internal.models.candidate import InstallationCandidate
 from pip._internal.models.index import PyPI
 from pip._internal.models.link import (
@@ -886,12 +887,13 @@ def test_collect_sources__file_expand_dir(data: TestData) -> None:
     """
     collector = LinkCollector.create(
         session=mock.Mock(is_secure_origin=None),  # Shouldn't be used.
-        options=mock.Mock(
+        index_group=IndexGroup.create_(mock.Mock(
             index_url="ignored-by-no-index",
             extra_index_urls=[],
             no_index=True,
             find_links=[data.find_links],
         ),
+    )
     )
     sources = collector.collect_sources(
         # Shouldn't be used.
@@ -913,12 +915,13 @@ def test_collect_sources__file_not_find_link(data: TestData) -> None:
     """
     collector = LinkCollector.create(
         session=mock.Mock(is_secure_origin=None),  # Shouldn't be used.
-        options=mock.Mock(
+        index_group=IndexGroup.create_(mock.Mock(
             index_url=data.index_url("empty_with_pkg"),
             extra_index_urls=[],
             no_index=False,
             find_links=[],
         ),
+    )
     )
     sources = collector.collect_sources(
         project_name="",
@@ -938,12 +941,13 @@ def test_collect_sources__non_existing_path() -> None:
     """
     collector = LinkCollector.create(
         session=mock.Mock(is_secure_origin=None),  # Shouldn't be used.
-        options=mock.Mock(
+        index_group=IndexGroup.create_(mock.Mock(
             index_url="ignored-by-no-index",
             extra_index_urls=[],
             no_index=True,
             find_links=[os.path.join("this", "does", "not", "exist")],
         ),
+    )
     )
     sources = collector.collect_sources(
         # Shouldn't be used.
@@ -1116,8 +1120,8 @@ def test_link_collector_create(
         no_index=no_index,
     )
     link_collector = LinkCollector.create(
-        session,
-        options=options,
+        session=session,
+        index_group=IndexGroup.create_(options),
         suppress_no_index=suppress_no_index,
     )
 
@@ -1156,7 +1160,7 @@ def test_link_collector_create_find_links_expansion(
     temp2_dir = os.path.join(tmpdir, "temp2")
     os.mkdir(temp2_dir)
 
-    link_collector = LinkCollector.create(session, options=options)
+    link_collector = LinkCollector.create(session=session, index_group=IndexGroup.create_(options))
 
     search_scope = link_collector.search_scope
     # Only ~/temp2 gets expanded. Also, the path is normalized when expanded.

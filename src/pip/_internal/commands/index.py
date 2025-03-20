@@ -15,6 +15,7 @@ from pip._internal.commands.search import (
 from pip._internal.exceptions import CommandError, DistributionNotFound, PipError
 from pip._internal.index.collector import LinkCollector
 from pip._internal.index.package_finder import PackageFinder
+from pip._internal.index.index_group import IndexGroup
 from pip._internal.models.selection_prefs import SelectionPreferences
 from pip._internal.models.target_python import TargetPython
 from pip._internal.network.session import PipSession
@@ -90,7 +91,9 @@ class IndexCommand(IndexGroupCommand):
         """
         Create a package finder appropriate to the index command.
         """
-        link_collector = LinkCollector.create(session, options=options)
+        link_collector = LinkCollector.create(session=session, 
+            index_group=IndexGroup.create_(options),
+        )
 
         # Pass allow_yanked=False to ignore yanked versions.
         selection_prefs = SelectionPreferences(

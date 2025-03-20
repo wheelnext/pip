@@ -44,25 +44,18 @@ class IndexGroup:
             cls, options: Values,
     ) -> "IndexGroup":
         """
-        Create an IndexGroup object from the given options and session.
+        Create an IndexGroup object from the given options.
 
         :param options: The options to use.
         """
-        index_urls = options.get("index_url", [])
-        if not index_urls:
-            index_urls = [options.get("extra_index_url", [])]
-        index_urls = [url for urls in index_urls for url in urls]
-
-        find_links = options.get("find_links", [])
-        if not find_links:
-            find_links = options.get("find_links", [])
-        find_links = [url for urls in find_links for url in urls]
-
-        no_index = options.get("no_index", False)
-        format_control = options.get("format_control", None)
-        allow_yanked = options.get("allow_yanked", False)
-        ignore_requires_python = options.get("ignore_requires_python", False)
-        prefer_binary = options.get("prefer_binary", False)
+        index_urls = [options.index_url]
+        index_urls += [url for urls in options.extra_index_urls for url in urls]
+        find_links = options.find_links
+        no_index = options.no_index
+        format_control = options.format_control
+        allow_yanked = options.allow_yanked if hasattr(options, 'allow_yanked') else False
+        ignore_requires_python = options.ignore_requires_python
+        prefer_binary = options.prefer_binary
 
         return cls(index_urls, find_links, no_index, allow_yanked, format_control,
                    ignore_requires_python, prefer_binary)

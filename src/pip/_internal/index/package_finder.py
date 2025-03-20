@@ -577,6 +577,7 @@ class PackageFinder:
     def __init__(self, package_finders: List["InternalPackageFinder"] ) -> None:
         self._package_finders = package_finders
 
+    @classmethod
     def create(cls,
                link_collector: Optional[LinkCollector] = None,
                selection_prefs: Optional[SelectionPreferences] = None,
@@ -584,8 +585,10 @@ class PackageFinder:
                # Args above are for the InternalPackageFinder constructor.
                # Args below are the new constructor that handles multiple
                # PackageFinder instances.
-               options: Values | None = None,
-               session: "PipSession" | None = None,
+               options: Optional[Values] = None,
+               # session is should come in as part of the link collector. If the link collector is not provided, 
+               # then the session should be provided.
+               session: Optional["PipSession"] = None,
                ) -> "PackageFinder":
         """Create an InternalPackageFinder for each index group."""
 
@@ -598,16 +601,26 @@ class PackageFinder:
                 target_python=target_python,
             )])
 
-        index_groups = []
         # If no explicit index groups are specified, then create one for
         # the --index-url, --extra-index-url, and --find-links options.
-        index_groups = options.get("index_groups")
+        index_groups = options.index_groups
+        # there is always one implicit index group, the default index group, which matches pip's existing behavior
         if not index_groups:
             index_groups = [IndexGroup.create_(options, session)]
 
-        package_finders: Dict[str,"InternalPackageFinder"] = {}
+        index_group_objects = [IndexGroup.create_(options, session)]
         for index_group in index_groups:
-            link_collector = LinkCollector.create(session, index_group)
+            # TODO: this only supports index groups as single urls, rather than groups of multiple urls.
+            # Doing better will require either more complicated command line parsing or some kind of
+            # hierarchical config file
+            options.index_url = index_group
+            options.extra_index_url = []
+            index_group_objects.append(IndexGroup.create_(options, session))
+
+
+        package_finders: Dict[str,"InternalPackageFinder"] = {}
+        for index_group in index_group_objects:
+            link_collector = LinkCollector.create(session=session, index_group=index_group)
             selection_prefs = SelectionPreferences(
                 allow_yanked=index_group.allow_yanked,
                 format_control=index_group.format_control,
@@ -621,9 +634,9 @@ class PackageFinder:
 
         return PackageFinder([package_finders[name] for name in options.get("index_groups_order") or package_finders.keys()])
 
-    def __getattr__(self, attr):
-        """Forward attribute access to the current index group."""
-        return getattr(self._index_groups[self._current_index_group], attr)
+    @property
+    def search_scope(self) -> SearchScope:
+        return self._package_finders[self._current_package_finder].search_scope
 
 class InternalPackageFinder:
     """This finds packages.

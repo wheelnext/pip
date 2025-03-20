@@ -17,6 +17,7 @@ from pip._vendor.rich.text import Text
 
 from pip._internal.index.collector import LinkCollector
 from pip._internal.index.package_finder import PackageFinder
+from pip._internal.index.index_group import IndexGroup
 from pip._internal.metadata import get_default_environment
 from pip._internal.models.selection_prefs import SelectionPreferences
 from pip._internal.network.session import PipSession
@@ -169,7 +170,7 @@ def _get_current_remote_pip_version(
     # Lets use PackageFinder to see what the latest pip version is
     link_collector = LinkCollector.create(
         session,
-        options=options,
+        index_group=IndexGroup.create_(options),
         suppress_no_index=True,
     )
 

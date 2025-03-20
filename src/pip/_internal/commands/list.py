@@ -148,8 +148,11 @@ class ListCommand(IndexGroupCommand):
         # Lazy import the heavy index modules as most list invocations won't need 'em.
         from pip._internal.index.collector import LinkCollector
         from pip._internal.index.package_finder import PackageFinder
+        from pip._internal.index.index_group import IndexGroup
 
-        link_collector = LinkCollector.create(session, options=options)
+        link_collector = LinkCollector.create(session=session, 
+            index_group=IndexGroup.create_(options),
+        )
 
         # Pass allow_yanked=False to ignore yanked versions.
         selection_prefs = SelectionPreferences(
