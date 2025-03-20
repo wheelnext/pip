@@ -338,7 +338,7 @@ class CandidatePreferences:
 
 @dataclass(frozen=True)
 class BestCandidateResult:
-    """A collection of candidates, returned by `jPackageFinder.find_best_candidate`.
+    """A collection of candidates, returned by `PackageFinder.find_best_candidate`.
 
     This class is only intended to be instantiated by CandidateEvaluator's
     `compute_best_candidate()` method.
@@ -637,6 +637,13 @@ class PackageFinder:
     @property
     def search_scope(self) -> SearchScope:
         return self._package_finders[self._current_package_finder].search_scope
+
+    def find_best_candidate(self, project_name: str) -> BestCandidateResult:
+        for package_finder in self._package_finders:
+            best_candidate = package_finder.find_best_candidate(project_name)
+            if best_candidate:
+                return best_candidate
+        return best_candidate
 
 class InternalPackageFinder:
     """This finds packages.
