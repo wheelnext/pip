@@ -17,11 +17,6 @@ from pip._vendor.packaging.tags import (
     mac_platforms,
 )
 
-from pip._internal.utils.variant import (
-    VariantJson,
-    get_cached_variant_hashes_by_priority,
-)
-
 _apple_arch_pat = re.compile(r"(.+)_(\d+)_(\d+)_(.+)")
 
 

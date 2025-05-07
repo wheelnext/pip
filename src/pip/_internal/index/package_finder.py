@@ -36,7 +36,10 @@ from pip._internal.utils.logging import indent_log
 from pip._internal.utils.misc import build_netloc
 from pip._internal.utils.packaging import check_requires_python
 from pip._internal.utils.unpacking import SUPPORTED_EXTENSIONS
-from pip._internal.utils.variant import VariantJson
+from pip._internal.utils.variant import (
+    VariantJson,
+    get_cached_variant_hashes_by_priority,
+)
 
 if TYPE_CHECKING:
     from pip._vendor.typing_extensions import TypeGuard
@@ -105,6 +108,7 @@ class LinkType(enum.Enum):
     format_invalid = enum.auto()
     platform_mismatch = enum.auto()
     requires_python_mismatch = enum.auto()
+    variant_unsupported = enum.auto()
 
 
 class LinkEvaluator:
@@ -205,7 +209,6 @@ class LinkEvaluator:
 
                 variant_hash = wheel.variant_hash
                 supported_tags = self._target_python.get_unsorted_tags()
-                # TODO: variants
                 if not wheel.supported(supported_tags):
                     # Include the wheel's tags in the reason string to
                     # simplify troubleshooting compatibility issues.
@@ -215,6 +218,14 @@ class LinkEvaluator:
                         f"(run pip debug --verbose to show compatible tags)"
                     )
                     return (LinkType.platform_mismatch, reason, None)
+
+                supported_variants = set(get_cached_variant_hashes_by_priority(self.variants_json))
+                if wheel.variant_hash not in supported_variants:
+                    reason = (
+                        f"variant {wheel.variant_hash} is not compatible with "
+                        f"the system"
+                    )
+                    return (LinkType.variant_unsupported, reason, None)
 
                 version = wheel.version
 
@@ -400,8 +411,8 @@ class CandidateEvaluator:
         if specifier is None:
             specifier = specifiers.SpecifierSet()
 
-        # TODO: variants
         supported_tags = target_python.get_sorted_tags()
+        supported_variants = get_cached_variant_hashes_by_priority(variants_json)
 
         return cls(
             project_name=project_name,
@@ -410,6 +421,7 @@ class CandidateEvaluator:
             prefer_binary=prefer_binary,
             allow_all_prereleases=allow_all_prereleases,
             hashes=hashes,
+            supported_variants=supported_variants,
         )
 
     def __init__(
@@ -420,6 +432,7 @@ class CandidateEvaluator:
         prefer_binary: bool = False,
         allow_all_prereleases: bool = False,
         hashes: Optional[Hashes] = None,
+        supported_variants: List[str] = [],
     ) -> None:
         """
         :param supported_tags: The PEP 425 tags supported by the target
@@ -431,11 +444,15 @@ class CandidateEvaluator:
         self._project_name = project_name
         self._specifier = specifier
         self._supported_tags = supported_tags
+        self._supported_variants = supported_variants
         # Since the index of the tag in the _supported_tags list is used
         # as a priority, precompute a map from tag to index/priority to be
         # used in wheel.find_most_preferred_tag.
         self._wheel_tag_preferences = {
             tag: idx for idx, tag in enumerate(supported_tags)
+        }
+        self._wheel_variant_preferences = {
+            variant: idx for idx, variant in enumerate(supported_variants)
         }
 
     def get_applicable_candidates(
@@ -517,7 +534,8 @@ class CandidateEvaluator:
                         valid_tags, self._wheel_tag_preferences
                     )
                 )
-            except ValueError:
+                variant_pri = -self._wheel_variant_preferences[wheel.variant_hash]
+            except (KeyError, ValueError):
                 raise UnsupportedWheel(
                     f"{wheel.filename} is not a supported wheel for this platform. It "
                     "can't be sorted."
@@ -531,6 +549,7 @@ class CandidateEvaluator:
                 build_tag = (int(build_tag_groups[0]), build_tag_groups[1])
         else:  # sdist
             pri = -(support_num)
+            variant_pri = -self._wheel_variant_preferences[None]
         has_allowed_hash = int(link.is_hash_allowed(self._hashes))
         yank_value = -1 * int(link.is_yanked)  # -1 for yanked.
         return (
@@ -538,6 +557,7 @@ class CandidateEvaluator:
             yank_value,
             binary_preference,
             candidate.version,
+            variant_pri,
             pri,
             build_tag,
         )
