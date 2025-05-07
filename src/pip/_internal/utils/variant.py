@@ -8,11 +8,10 @@ import logging
 from variantlib.api import get_variant_hashes_by_priority
 from variantlib.loader import PluginLoader
 
-from pip._internal.configuration import Configuration
-from pip._internal.exceptions import ConfigurationError, PipError
-
 if TYPE_CHECKING:
     from typing import Callable
+
+    from pip._internal.models.wheel import Wheel
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +27,14 @@ class VariantJson:
 
     def __hash__(self) -> int:
         return hash(self.url)
+
+
+def get_variants_json_filename(wheel: Wheel) -> str:
+    # these are normalized, but with .replace("_", "-")
+    return (
+        f"{wheel.name.replace("-", "_")}-{wheel.version.replace("-", "_")}-"
+        "variants.json"
+    )
 
 
 @cache
