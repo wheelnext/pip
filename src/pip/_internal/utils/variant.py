@@ -45,13 +45,7 @@ def get_cached_variant_hashes_by_priority(
         return [None]
 
     parsed_json = variants_json.json()
-
-    loader = PluginLoader()
-    for provider_info in parsed_json.get("providers", {}).values():
-        loader.load_plugin(provider_info["plugin-api"])
-
-    variants = list(get_variant_hashes_by_priority(variants_json=parsed_json,
-                                                   plugin_loader=loader))
+    variants = list(get_variant_hashes_by_priority(variants_json=parsed_json))
     if variants:
         logger.info(f"Total Number of Compatible Variants: {len(variants):,}")  # noqa: G004
     return [*variants, None]
