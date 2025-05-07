@@ -544,7 +544,7 @@ class CandidateEvaluator:
                         valid_tags, self._wheel_tag_preferences
                     )
                 )
-                variant_pri = supported_variants.index(wheel.variant_hash)
+                variant_pri = -supported_variants.index(wheel.variant_hash)
             except ValueError:
                 raise UnsupportedWheel(
                     f"{wheel.filename} is not a supported wheel for this platform. It "
