@@ -741,7 +741,7 @@ class PackageFinder:
         for link in links:
             if link not in seen:
                 seen.add(link)
-                if link.filename == "variants.json":
+                if link.filename.endswith("-variants.json"):
                     variants_json.append(link)
                 elif link.egg_fragment:
                     eggs.append(link)
@@ -796,7 +796,11 @@ class PackageFinder:
         """
         candidates = []
         for link in self._sort_links(links):
-            if link.filename == "variants.json":
+            if link.filename.endswith("-variants.json"):
+                if link_evaluator.variants_json is not None:
+                    raise NotImplementedError(
+                        "Only a single *-variants.json is supported now"
+                    )
                 link_evaluator.variants_json = self.get_variants_json(link)
                 continue
 
