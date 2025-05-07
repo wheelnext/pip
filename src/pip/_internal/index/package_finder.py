@@ -204,9 +204,8 @@ class LinkEvaluator:
                     return (LinkType.different_project, reason, None)
 
                 variant_hash = wheel.variant_hash
-                supported_tags = self._target_python.get_unsorted_tags(
-                    variants_json=self.variants_json
-                )
+                supported_tags = self._target_python.get_unsorted_tags()
+                # TODO: variants
                 if not wheel.supported(supported_tags):
                     # Include the wheel's tags in the reason string to
                     # simplify troubleshooting compatibility issues.
@@ -401,9 +400,8 @@ class CandidateEvaluator:
         if specifier is None:
             specifier = specifiers.SpecifierSet()
 
-        supported_tags = target_python.get_sorted_tags(
-            variants_json=variants_json,
-        )
+        # TODO: variants
+        supported_tags = target_python.get_sorted_tags()
 
         return cls(
             project_name=project_name,
