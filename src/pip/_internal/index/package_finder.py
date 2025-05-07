@@ -802,10 +802,6 @@ class PackageFinder:
         except InvalidVersion:
             return None
 
-    @functools.cache
-    def get_variants_json(self, link: Link) -> dict:
-        return VariantJson(self._link_collector.session.request("GET", link.url).json())
-
     def evaluate_links(
         self, link_evaluator: LinkEvaluator, links: Iterable[Link]
     ) -> List[InstallationCandidate]:
@@ -819,7 +815,10 @@ class PackageFinder:
                     raise NotImplementedError(
                         "Only a single *-variants.json is supported now"
                     )
-                link_evaluator.variants_json = self.get_variants_json(link)
+                link_evaluator.variants_json = VariantJson(
+                    link.url,
+                    lambda url: self._link_collector.session.request("GET", url).json(),
+                )
                 continue
 
             candidate = self.get_install_candidate(link_evaluator, link)
