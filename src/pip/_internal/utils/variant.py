@@ -6,11 +6,16 @@ from typing import TYPE_CHECKING
 import logging
 
 from variantlib.api import get_variant_hashes_by_priority
+from variantlib.api import check_variant_supported
+from variantlib.dist_metadata import DistMetadata
 from variantlib.loader import PluginLoader
+
+from pip._internal.metadata import FilesystemWheel, get_wheel_distribution
 
 if TYPE_CHECKING:
     from typing import Callable
 
+    from pip._internal.models.link import Link
     from pip._internal.models.wheel import Wheel
 
 logger = logging.getLogger(__name__)
@@ -49,3 +54,14 @@ def get_cached_variant_hashes_by_priority(
     if variants:
         logger.info(f"Total Number of Compatible Variants: {len(variants):,}")  # noqa: G004
     return [*variants, None]
+
+
+def variant_wheel_supported(wheel: Wheel, link: Link) -> bool:
+    if wheel.variant_hash is None:
+        return True
+
+    if link.scheme != "file":
+        raise NotImplementedError
+
+    wheel_dist = get_wheel_distribution(FilesystemWheel(link.file_path), "")
+    return check_variant_supported(metadata=DistMetadata(wheel_dist.metadata))
