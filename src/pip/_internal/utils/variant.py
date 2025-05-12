@@ -5,9 +5,9 @@ from functools import cache
 from typing import TYPE_CHECKING
 import logging
 
-from variantlib.api import get_variant_hashes_by_priority
-from variantlib.api import check_variant_supported
-from variantlib.dist_metadata import DistMetadata
+from pip._vendor.variantlib.api import get_variant_hashes_by_priority
+from pip._vendor.variantlib.api import check_variant_supported
+from pip._vendor.variantlib.dist_metadata import DistMetadata
 
 from pip._internal.metadata import FilesystemWheel, get_wheel_distribution
 
