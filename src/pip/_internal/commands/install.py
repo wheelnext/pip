@@ -422,7 +422,7 @@ class InstallCommand(RequirementCommand):
                         "Would install %s",
                         " ".join(
                             "-".join(item[:2])
-                            + (f"-{item[2]}" if len(item) > 2 else "")
+                            + (f"#{item[2]}" if len(item) > 2 else "")
                             for item in would_install_items
                         ),
                     )
@@ -516,7 +516,7 @@ class InstallCommand(RequirementCommand):
                 if version:
                     text = f"{text}-{version}"
                 if variant_hash:
-                    text = f"{text}-{variant_hash}"
+                    text = f"{text}#{variant_hash}"
                 summary.append(text)
 
             if conflicts is not None:
