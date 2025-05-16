@@ -1006,6 +1006,7 @@ class PackageFinder:
             req.name,
             specifier=req.specifier,
             hashes=hashes,
+            variant_hash=req.req.variant_hash,
         )
         best_candidate = best_candidate_result.best_candidate
 
