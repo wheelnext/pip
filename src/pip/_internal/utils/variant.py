@@ -3,11 +3,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 from functools import cache
 from typing import TYPE_CHECKING
+import json
 import logging
 
 from variantlib.api import get_variant_hashes_by_priority
 from variantlib.api import check_variant_supported
-from variantlib.dist_metadata import DistMetadata
+from variantlib.constants import VARIANT_DIST_INFO_FILENAME
+from variantlib.variants_json import VariantsJson
 
 from pip._internal.metadata import FilesystemWheel, get_wheel_distribution
 
@@ -63,4 +65,5 @@ def variant_wheel_supported(wheel: Wheel, link: Link) -> bool:
         raise NotImplementedError
 
     wheel_dist = get_wheel_distribution(FilesystemWheel(link.file_path), "")
-    return check_variant_supported(metadata=DistMetadata(wheel_dist.metadata))
+    variant_json = VariantsJson(json.loads(wheel_dist.read_text(VARIANT_DIST_INFO_FILENAME)))
+    return check_variant_supported(metadata=variant_json)
