@@ -8,7 +8,7 @@ import operator
 import os
 import platform
 import sys
-from typing import Any, Callable, TypedDict, cast
+from typing import Any, Callable, Sequence, TypedDict, cast
 
 from ._parser import MarkerAtom, MarkerList, Op, Value, Variable
 from ._parser import parse_marker as _parse_marker
@@ -189,6 +189,27 @@ def _eval_op(lhs: str, op: Op, rhs: str) -> bool:
     return oper(lhs, rhs)
 
 
+def _canonicalize_variant_metadata(vmeta: str | set, key: str) -> str:
+    expected_splits = {
+        "variant_namespaces": 1,
+        "variant_features": 2,
+        "variant_properties": 3,
+    }[key]
+
+    def normalize_one(vmeta: str) -> str:
+        vsplit = vmeta.split("::")
+        if len(vsplit) != expected_splits:
+            raise ValueError(
+                f"Invalid {key}={vmeta!r}: expected {expected_splits} components "
+                "separated by ::"
+            )
+        return "::".join(x.strip() for x in vsplit)
+
+    if isinstance(vmeta, frozenset):
+        return " ".join(normalize_one(x) for x in vmeta)
+    return normalize_one(vmeta)
+
+
 def _normalize(*values: str, key: str) -> tuple[str, ...]:
     # PEP 685 – Comparison of extra names for optional distribution dependencies
     # https://peps.python.org/pep-0685/
@@ -196,6 +217,9 @@ def _normalize(*values: str, key: str) -> tuple[str, ...]:
     # > compared using the semantics outlined in PEP 503 for names
     if key == "extra":
         return tuple(canonicalize_name(v) for v in values)
+
+    if key.startswith("variant_"):
+        return tuple(_canonicalize_variant_metadata(v, key) for v in values)
 
     # other environment markers don't have such standards
     return values
@@ -309,6 +333,10 @@ class Marker:
         """
         current_environment = cast("dict[str, str]", default_environment())
         current_environment["extra"] = ""
+        current_environment["variant_namespaces"] = frozenset()
+        current_environment["variant_features"] = frozenset()
+        current_environment["variant_properties"] = frozenset()
+
         if environment is not None:
             current_environment.update(environment)
             # The API used to allow setting extra to None. We need to handle this
