@@ -23,6 +23,7 @@ from pip._internal.req.constructors import (
 from pip._internal.req.req_install import InstallRequirement
 from pip._internal.utils.direct_url_helpers import direct_url_from_link
 from pip._internal.utils.misc import normalize_version_info
+from pip._internal.utils.variant import get_variant_description_for_link
 
 from .base import Candidate, Requirement, format_name
 
@@ -251,7 +252,7 @@ class _InstallRequirementBackedCandidate(Candidate):
     def iter_dependencies(self, with_requires: bool) -> Iterable[Optional[Requirement]]:
         requires = self.dist.iter_dependencies() if with_requires else ()
         for r in requires:
-            yield from self._factory.make_requirements_from_spec(str(r), self._ireq)
+            yield from self._factory.make_requirements_from_spec(str(r), self._ireq, variant_desc=get_variant_description_for_link(self._link))
         yield self._factory.make_requires_python_requirement(self.dist.requires_python)
 
     def get_install_requirement(self) -> Optional[InstallRequirement]:

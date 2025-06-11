@@ -205,7 +205,7 @@ def _canonicalize_variant_metadata(vmeta: str | set, key: str) -> str:
             )
         return "::".join(x.strip() for x in vsplit)
 
-    if isinstance(vmeta, frozenset):
+    if not isinstance(vmeta, str):
         return " ".join(normalize_one(x) for x in vmeta)
     return normalize_one(vmeta)
 

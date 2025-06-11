@@ -10,6 +10,7 @@ from variantlib.api import get_variant_hashes_by_priority
 from variantlib.api import check_variant_supported
 from variantlib.constants import VARIANT_DIST_INFO_FILENAME
 from variantlib.variants_json import VariantsJson
+from variantlib.models.variant import VariantDescription
 
 from pip._internal.metadata import FilesystemWheel, get_wheel_distribution
 
@@ -20,6 +21,8 @@ if TYPE_CHECKING:
     from pip._internal.models.wheel import Wheel
 
 logger = logging.getLogger(__name__)
+
+VARIANT_DESCRIPTIONS: dict[Link, VariantDescription] = {}
 
 
 @dataclass
@@ -57,8 +60,13 @@ def get_cached_variant_hashes_by_priority(
     return [*variants, None]
 
 
+def get_variant_description_for_link(link: Link) -> VariantDescription:
+    return VARIANT_DESCRIPTIONS[link]
+
+
 def variant_wheel_supported(wheel: Wheel, link: Link) -> bool:
     if wheel.variant_hash is None:
+        VARIANT_DESCRIPTIONS[link] = VariantDescription()
         return True
 
     if link.scheme != "file":
@@ -66,4 +74,5 @@ def variant_wheel_supported(wheel: Wheel, link: Link) -> bool:
 
     wheel_dist = get_wheel_distribution(FilesystemWheel(link.file_path), "")
     variant_json = VariantsJson(json.loads(wheel_dist.read_text(VARIANT_DIST_INFO_FILENAME)))
+    VARIANT_DESCRIPTIONS[link] = next(iter(variant_json.variants.values()))
     return check_variant_supported(metadata=variant_json)
