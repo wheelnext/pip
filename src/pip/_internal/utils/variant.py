@@ -47,17 +47,36 @@ def get_variants_json_filename(wheel: Wheel) -> str:
 
 
 @cache
+def get_variants_json(variants_json: VariantJson) -> VariantsJson:
+    return VariantsJson(variants_json.json())
+
+
+@cache
 def get_cached_variant_hashes_by_priority(
-        variants_json: Optional[VariantJson] = None
-        ) -> list[str]:
+    variants_json: VariantJson | None,
+) -> list[str]:
     if variants_json is None:
         return [None]
 
-    parsed_json = variants_json.json()
-    variants = list(get_variant_hashes_by_priority(variants_json=parsed_json))
+    variants = list(get_variant_hashes_by_priority(variants_json=get_variants_json(variants_json)))
     if variants:
         logger.info(f"Total Number of Compatible Variants: {len(variants):,}")  # noqa: G004
     return [*variants, None]
+
+
+@cache
+def store_variant_desc(
+    link: Link,
+    wheel: Wheel,
+    variants_json: VariantJson | None,
+) -> None:
+    if wheel.variant_hash in (None, "00000000"):
+        VARIANT_DESCRIPTIONS[link] = VariantDescription()
+        return
+
+    assert variants_json is not None
+    parsed_json = get_variants_json(variants_json)
+    VARIANT_DESCRIPTIONS[link] = parsed_json.variants[wheel.variant_hash]
 
 
 def get_variant_description_for_link(link: Link) -> VariantDescription:

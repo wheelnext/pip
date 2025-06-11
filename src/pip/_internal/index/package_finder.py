@@ -43,6 +43,7 @@ from pip._internal.utils.variant import (
     VariantJson,
     get_cached_variant_hashes_by_priority,
     get_variants_json_filename,
+    store_variant_desc,
 )
 
 if TYPE_CHECKING:
@@ -228,6 +229,7 @@ class LinkEvaluator:
                         self.variants_json.get(get_variants_json_filename(wheel))
                     )
                 )
+                store_variant_desc(link, wheel, self.variants_json.get(get_variants_json_filename(wheel)))
                 if wheel.variant_hash not in supported_variants:
                     reason = (
                         f"variant {wheel.variant_hash} is not compatible with "
