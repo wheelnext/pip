@@ -130,6 +130,7 @@ class SimpleWheelCache(Cache):
         link: Link,
         package_name: Optional[str],
         supported_tags: List[Tag],
+        finder: "PackageFinder",
     ) -> Link:
         candidates = []
 
@@ -151,9 +152,12 @@ class SimpleWheelCache(Cache):
                     package_name,
                 )
                 continue
+            # variant implementer's note: this is used when doing:
+            # pip install --no-binary ...
+            # and the wheel is already in cache
             if (
                 not wheel.supported(supported_tags)
-                or not variant_wheel_supported(wheel, link)
+                or not variant_wheel_supported(wheel, link, finder)
             ):
                 # Built for a different python/arch/etc
                 continue
@@ -231,8 +235,9 @@ class WheelCache(Cache):
         link: Link,
         package_name: Optional[str],
         supported_tags: List[Tag],
+        finder: "PackageFinder",
     ) -> Link:
-        cache_entry = self.get_cache_entry(link, package_name, supported_tags)
+        cache_entry = self.get_cache_entry(link, package_name, supported_tags, finder)
         if cache_entry is None:
             return link
         return cache_entry.link
@@ -242,6 +247,7 @@ class WheelCache(Cache):
         link: Link,
         package_name: Optional[str],
         supported_tags: List[Tag],
+        finder: "PackageFinder",
     ) -> Optional[CacheEntry]:
         """Returns a CacheEntry with a link to a cached item if it exists or
         None. The cache entry indicates if the item was found in the persistent
@@ -251,6 +257,7 @@ class WheelCache(Cache):
             link=link,
             package_name=package_name,
             supported_tags=supported_tags,
+            finder=finder,
         )
         if retval is not link:
             return CacheEntry(retval, persistent=True)
@@ -259,6 +266,7 @@ class WheelCache(Cache):
             link=link,
             package_name=package_name,
             supported_tags=supported_tags,
+            finder=finder,
         )
         if retval is not link:
             return CacheEntry(retval, persistent=False)

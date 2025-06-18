@@ -165,7 +165,7 @@ class LinkEvaluator:
         self.project_name = project_name
         self.variants_json = {}
 
-    def evaluate_link(self, link: Link) -> Tuple[LinkType, str, Optional[str]]:
+    def evaluate_link(self, link: Link, finder: "PackageFinder") -> Tuple[LinkType, str, Optional[str]]:
         """
         Determine whether a link is a candidate for installation.
 
@@ -226,7 +226,8 @@ class LinkEvaluator:
 
                 supported_variants = set(
                     get_cached_variant_hashes_by_priority(
-                        self.variants_json.get(get_variants_json_filename(wheel))
+                        self.variants_json.get(get_variants_json_filename(wheel)),
+                        finder=finder
                     )
                 )
                 store_variant_desc(link, wheel, self.variants_json.get(get_variants_json_filename(wheel)))
@@ -406,6 +407,8 @@ class CandidateEvaluator:
         hashes: Optional[Hashes] = None,
         variants_json: dict[VariantJson] = {},
         variant_hash: str | None = None,
+        *,
+        finder: "PackageFinder",
     ) -> "CandidateEvaluator":
         """Create a CandidateEvaluator object.
 
@@ -433,6 +436,7 @@ class CandidateEvaluator:
             hashes=hashes,
             variants_json=variants_json,
             variant_hash=variant_hash,
+            finder=finder,
         )
 
     def __init__(
@@ -445,6 +449,8 @@ class CandidateEvaluator:
         hashes: Optional[Hashes] = None,
         variants_json: dict[VariantJson] = [],
         variant_hash: str | None = None,
+        *,
+        finder: "PackageFinder",
     ) -> None:
         """
         :param supported_tags: The PEP 425 tags supported by the target
@@ -458,6 +464,7 @@ class CandidateEvaluator:
         self._supported_tags = supported_tags
         self._variants_json = variants_json
         self._variant_hash = variant_hash
+        self._finder = finder
         # Since the index of the tag in the _supported_tags list is used
         # as a priority, precompute a map from tag to index/priority to be
         # used in wheel.find_most_preferred_tag.
@@ -544,7 +551,8 @@ class CandidateEvaluator:
             wheel = Wheel(link.filename)
 
             supported_variants = get_cached_variant_hashes_by_priority(
-                self._variants_json.get(get_variants_json_filename(wheel))
+                self._variants_json.get(get_variants_json_filename(wheel)),
+                finder=self._finder,
             )
 
             try:
@@ -837,7 +845,7 @@ class PackageFinder:
         If the link is a candidate for install, convert it to an
         InstallationCandidate and return it. Otherwise, return None.
         """
-        result, detail, variant_hash = link_evaluator.evaluate_link(link)
+        result, detail, variant_hash = link_evaluator.evaluate_link(link, self)
         if result != LinkType.candidate:
             self._log_skipped_link(link, result, detail)
             return None
@@ -954,6 +962,8 @@ class PackageFinder:
         hashes: Optional[Hashes] = None,
         variants_json: Optional[VariantJson] = None,
         variant_hash: str | None = None,
+        *,
+        finder: "PackageFinder",
     ) -> CandidateEvaluator:
         """Create a CandidateEvaluator object to use."""
         candidate_prefs = self._candidate_prefs
@@ -966,6 +976,7 @@ class PackageFinder:
             hashes=hashes,
             variants_json=variants_json,
             variant_hash=variant_hash,
+            finder=finder,
         )
 
     @functools.lru_cache(maxsize=None)
@@ -991,6 +1002,7 @@ class PackageFinder:
             hashes=hashes,
             variants_json=variants_json,
             variant_hash=variant_hash,
+            finder=self,
         )
         return candidate_evaluator.compute_best_candidate(candidates)
 

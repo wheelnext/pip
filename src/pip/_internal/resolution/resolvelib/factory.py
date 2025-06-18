@@ -143,9 +143,11 @@ class Factory:
         if not link.is_wheel:
             return
         wheel = Wheel(link.filename)
+        # variant implementer's note: this is used when doing:
+        # pip install path/to/wheel.whl
         if (
             wheel.supported(self._finder.target_python.get_unsorted_tags())
-            and variant_wheel_supported(wheel, link)
+            and variant_wheel_supported(wheel, link, self._finder)
         ):
             return
         msg = f"{link.filename} is not a supported wheel on this platform."
@@ -626,6 +628,7 @@ class Factory:
             link=link,
             package_name=name,
             supported_tags=self._supported_tags_cache,
+            finder=self._finder,
         )
 
     def get_dist_to_uninstall(self, candidate: Candidate) -> Optional[BaseDistribution]:

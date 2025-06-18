@@ -229,7 +229,7 @@ class Resolver(BaseResolver):
             if (
                 requirement_set.check_supported_wheels and (
                     not wheel.supported(tags)
-                    or not variant_wheel_supported(wheel, install_req.link)
+                    or not variant_wheel_supported(wheel, install_req.link, self.finder)
                 )
             ):
                 raise InstallationError(
