@@ -25,7 +25,6 @@ from pip._vendor.packaging.specifiers import SpecifierSet
 from pip._vendor.packaging.utils import NormalizedName, canonicalize_name
 from pip._vendor.packaging.version import InvalidVersion, Version
 from pip._vendor.resolvelib import ResolutionImpossible
-from variantlib.models.variant import VariantDescription
 
 from pip._internal.cache import CacheEntry, WheelCache
 from pip._internal.exceptions import (
@@ -482,7 +481,7 @@ class Factory:
 
     def _make_requirements_from_install_req(
         self, ireq: InstallRequirement, requested_extras: Iterable[str],
-        variant_desc: VariantDescription = VariantDescription(),
+        variant_desc = None,
     ) -> Iterator[Requirement]:
         """
         Returns requirement objects associated with the given InstallRequirement. In
@@ -586,7 +585,7 @@ class Factory:
         specifier: str,
         comes_from: Optional[InstallRequirement],
         requested_extras: Iterable[str] = (),
-        variant_desc: VariantDescription = VariantDescription(),
+        variant_desc = None,
     ) -> Iterator[Requirement]:
         """
         Returns requirement objects associated with the given specifier. In most cases

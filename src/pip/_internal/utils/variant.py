@@ -5,22 +5,28 @@ from functools import cache
 from typing import TYPE_CHECKING
 import logging
 
-from variantlib.api import get_variant_hashes_by_priority
-from variantlib.api import check_variant_supported
-from variantlib.constants import VARIANT_DIST_INFO_FILENAME
-from variantlib.variants_json import VariantsJson
-from variantlib.variant_dist_info import VariantDistInfo
-from variantlib.models.variant import VariantDescription
-
 from pip._internal.build_env import BuildEnvironment
 from pip._internal.metadata import FilesystemWheel, get_wheel_distribution
 
 if TYPE_CHECKING:
+    from typing import Any
     from typing import Callable
 
     from pip._internal.package_finder import PackageFinder
     from pip._internal.models.link import Link
     from pip._internal.models.wheel import Wheel
+
+try:
+    from variantlib.api import get_variant_environment_dict
+    from variantlib.api import get_variant_hashes_by_priority
+    from variantlib.api import check_variant_supported
+    from variantlib.constants import VARIANT_DIST_INFO_FILENAME
+    from variantlib.variants_json import VariantsJson
+    from variantlib.variant_dist_info import VariantDistInfo
+    from variantlib.models.variant import VariantDescription
+except ImportError:
+    def get_variant_environment_dict(vdesc: Any) -> dict[str, str]:
+        return {}
 
 logger = logging.getLogger(__name__)
 
@@ -93,7 +99,7 @@ def store_variant_desc(
     variants_json: VariantJson | None,
 ) -> None:
     if wheel.variant_hash in (None, "00000000"):
-        VARIANT_DESCRIPTIONS[link] = VariantDescription()
+        VARIANT_DESCRIPTIONS[link] = None
         return
 
     assert variants_json is not None
@@ -107,7 +113,7 @@ def get_variant_description_for_link(link: Link) -> VariantDescription:
 
 def variant_wheel_supported(wheel: Wheel, link: Link, finder: PackageFinder) -> bool:
     if wheel.variant_hash is None:
-        VARIANT_DESCRIPTIONS[link] = VariantDescription()
+        VARIANT_DESCRIPTIONS[link] = None
         return True
 
     if link.scheme != "file":

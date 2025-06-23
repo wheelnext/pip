@@ -6,6 +6,7 @@ from contextlib import suppress
 from email.parser import Parser
 from functools import reduce
 from typing import (
+    Any,
     Callable,
     Dict,
     FrozenSet,
@@ -22,10 +23,9 @@ from pip._vendor.packaging.requirements import Requirement
 from pip._vendor.packaging.tags import Tag, parse_tag
 from pip._vendor.packaging.utils import NormalizedName, canonicalize_name
 from pip._vendor.packaging.version import Version
-from variantlib.api import get_variant_environment_dict
-from variantlib.constants import VARIANT_DIST_INFO_FILENAME
-from variantlib.models.variant import VariantDescription
-from variantlib.variants_json import VariantsJson
+from pip._internal.utils.variant import (
+    get_variant_environment_dict,
+)
 
 from pip._internal.distributions import make_distribution_for_install_requirement
 from pip._internal.metadata import get_default_environment
@@ -38,7 +38,7 @@ logger = logging.getLogger(__name__)
 class PackageDetails(NamedTuple):
     version: Version
     dependencies: List[Requirement]
-    variant_desc: VariantDescription = VariantDescription()
+    variant_desc: Any = None
 
 
 # Shorthands
@@ -59,11 +59,14 @@ def create_package_set_from_installed() -> Tuple[PackageSet, bool]:
     env = get_default_environment()
     for dist in env.iter_installed_distributions(local_only=False, skip=()):
         try:
+            from variantlib.constants import VARIANT_DIST_INFO_FILENAME
+            from variantlib.variants_json import VariantsJson
+
             variant_desc = next(iter(VariantsJson(
                 json.loads(dist.read_text(VARIANT_DIST_INFO_FILENAME))
             ).variants.values()))
-        except FileNotFoundError:
-            variant_desc = VariantDescription()
+        except (FileNotFoundError, ImportError):
+            variant_desc = None
         name = dist.canonical_name
         try:
             dependencies = list(dist.iter_dependencies())
@@ -102,8 +105,11 @@ def check_package_set(
             if name not in package_set:
                 missed = True
                 if req.marker is not None:
+                    env_dict = {}
+                    if package_detail.variant_desc is None:
+                        env_dict = get_variant_environment_dict(package_detail.variant_desc)
                     missed = req.marker.evaluate({"extra": "",
-                                                  **get_variant_environment_dict(package_detail.variant_desc)})
+                                                  **env_dict})
                 if missed:
                     missing_deps.add((name, req))
                 continue

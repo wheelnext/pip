@@ -16,8 +16,6 @@ from pip._vendor.packaging.utils import canonicalize_name
 from pip._vendor.packaging.version import Version
 from pip._vendor.packaging.version import parse as parse_version
 from pip._vendor.pyproject_hooks import BuildBackendHookCaller
-from variantlib.api import get_variant_environment_dict
-from variantlib.models.variant import VariantDescription
 
 from pip._internal.build_env import BuildEnvironment, NoOpBuildEnvironment
 from pip._internal.exceptions import InstallationError, PreviousBuildDirError
@@ -60,6 +58,9 @@ from pip._internal.utils.temp_dir import TempDirectory, tempdir_kinds
 from pip._internal.utils.unpacking import unpack_file
 from pip._internal.utils.virtualenv import running_under_virtualenv
 from pip._internal.vcs import vcs
+from pip._internal.utils.variant import (
+    get_variant_environment_dict,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -279,14 +280,17 @@ class InstallRequirement:
         specifiers = self.req.specifier
         return len(specifiers) == 1 and next(iter(specifiers)).operator in {"==", "==="}
 
-    def match_markers(self, extras_requested: Optional[Iterable[str]] = None, variant_desc: VariantDescription = VariantDescription()) -> bool:
+    def match_markers(self, extras_requested: Optional[Iterable[str]] = None, variant_desc = None) -> bool:
         if not extras_requested:
             # Provide an extra to safely evaluate the markers
             # without matching any extra
             extras_requested = ("",)
         if self.markers is not None:
+            venv_dict = {}
+            if variant_desc is not None:
+                venv_dict = get_variant_environment_dict(variant_Desc)
             return any(
-                self.markers.evaluate({"extra": extra, **get_variant_environment_dict(variant_desc)}) for extra in extras_requested
+                self.markers.evaluate({"extra": extra, **venv_dict}) for extra in extras_requested
             )
         else:
             return True

@@ -9,8 +9,6 @@ import sys
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, FrozenSet, Iterable, List, Optional, Set, Tuple, Union
 
-from variantlib.variants_json import VariantsJson
-
 from pip._vendor.packaging import specifiers
 from pip._vendor.packaging.tags import Tag
 from pip._vendor.packaging.utils import canonicalize_name
@@ -613,6 +611,8 @@ class CandidateEvaluator:
 
         best_candidate = self.sort_best_candidate(applicable_candidates)
         if best_candidate is not None and best_candidate.variant_hash is not None:
+            from variantlib.variants_json import VariantsJson
+
             variants_json = VariantsJson(
                 self._variants_json.get(
                     f"{best_candidate.name.replace('-', '_')}-"
