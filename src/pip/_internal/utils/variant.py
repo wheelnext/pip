@@ -79,7 +79,6 @@ def get_cached_variant_hashes_by_priority(
         variants = list(
             get_variant_hashes_by_priority(
                 variants_json=variant_info,
-                use_auto_install=False,
             )
         )
     if variants:
