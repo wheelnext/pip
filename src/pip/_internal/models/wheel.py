@@ -21,7 +21,7 @@ class Wheel:
     wheel_file_re = re.compile(
         r"""^(?P<namever>(?P<name>[^\s-]+?)-(?P<ver>[^\s-]*?))
         ((-(?P<build>\d[^-]*?))?-(?P<pyver>[^\s-]+?)-(?P<abi>[^\s-]+?)-(?P<plat>[^\s-]+?)
-        (-(?P<variant_hash>[0-9a-f]{8})([+][^\s-]*)?)?
+        (-(?P<variant_label>[0-9a-z_]{1,8})([+][^\s-]*)?)?
         \.whl|\.dist-info)$""",
         re.VERBOSE,
     )
@@ -62,7 +62,7 @@ class Wheel:
         self.pyversions = wheel_info.group("pyver").split(".")
         self.abis = wheel_info.group("abi").split(".")
         self.plats = wheel_info.group("plat").split(".")
-        self.variant_hash = wheel_info.group("variant_hash")
+        self.variant_hash = wheel_info.group("variant_label")
 
         # All the tag combinations from this file
         self.file_tags = {

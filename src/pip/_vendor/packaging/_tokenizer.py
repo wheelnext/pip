@@ -86,7 +86,7 @@ DEFAULT_RULES: dict[str, str | re.Pattern[str]] = {
     "WS": r"[ \t]+",
     "END": r"$",
     "HASH": r"#",
-    "VARIANT_HASH": r"[a-fA-F0-9]{8}",
+    "VARIANT_LABEL": r"[a-z0-9_]{1,8}",
 }
 
 

@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 
 try:
     from variantlib.api import get_variant_environment_dict
-    from variantlib.api import get_variant_hashes_by_priority
+    from variantlib.api import get_variants_by_priority
     from variantlib.api import check_variant_supported
     from variantlib.constants import VARIANT_DIST_INFO_FILENAME
     from variantlib.variants_json import VariantsJson
@@ -83,7 +83,7 @@ def get_cached_variant_hashes_by_priority(
 
     with build_env:
         variants = list(
-            get_variant_hashes_by_priority(
+            get_variants_by_priority(
                 variants_json=variant_info,
             )
         )
