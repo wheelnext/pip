@@ -125,4 +125,4 @@ def variant_wheel_supported(wheel: Wheel, link: Link, finder: PackageFinder) -> 
     build_env = get_build_env(tuple(variant_info.get_provider_requires()), finder)
 
     with build_env:
-        return check_variant_supported(variant_info=variant_info, use_auto_install=False)
+        return check_variant_supported(variant_info=variant_info)
