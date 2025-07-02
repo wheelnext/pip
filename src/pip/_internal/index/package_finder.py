@@ -39,6 +39,7 @@ from pip._internal.utils.logging import indent_log
 from pip._internal.utils.misc import build_netloc
 from pip._internal.utils.packaging import check_requires_python
 from pip._internal.utils.unpacking import SUPPORTED_EXTENSIONS
+from pip._internal.utils.urls import path_to_url
 from pip._internal.utils.variant import (
     VariantJson,
     get_cached_variant_hashes_by_priority,
@@ -895,6 +896,9 @@ class PackageFinder:
         page_links = list(parse_links(index_response))
 
         with indent_log():
+            # This is how evaluate_links gets called in a way that gets the
+            # variants.json file processed for URLs. I need to insert the same
+            # thing for find-links
             package_links = self.evaluate_links(
                 link_evaluator,
                 links=page_links,
@@ -930,6 +934,14 @@ class PackageFinder:
         )
         page_candidates = list(page_candidates_it)
 
+        # Since candidates_from_page does not get used to process file sources
+        # from find-links, manually inject evaluate_links calls here.
+        _links = [
+            Link(path_to_url(fl.variants_json)) 
+            for fl in collected_sources.find_links
+            if fl.variants_json is not None
+        ]
+        self.evaluate_links(link_evaluator, _links)
         file_links_it = itertools.chain.from_iterable(
             source.file_links()
             for sources in collected_sources

@@ -51,6 +51,7 @@ class _FlatDirectoryToUrls:
         self._path = path
         self._page_candidates: List[str] = []
         self._project_name_to_urls: Dict[str, List[str]] = defaultdict(list)
+        self.variants_json = None
         self._scanned_directory = False
 
     def _scan_directory(self) -> None:
@@ -71,6 +72,8 @@ class _FlatDirectoryToUrls:
                 try:
                     project_filename = parse_sdist_filename(entry.name)[0]
                 except InvalidSdistFilename:
+                    if entry.name.endswith("-variants.json"):
+                        self.variants_json = entry.path
                     continue
 
             self._project_name_to_urls[project_filename].append(url)
@@ -129,6 +132,10 @@ class _FlatDirectorySource(LinkSource):
     def file_links(self) -> FoundLinks:
         for url in self._path_to_urls.project_name_to_urls[self._project_name]:
             yield Link(url)
+
+    @property
+    def variants_json(self):
+        return self._path_to_urls.variants_json
 
 
 class _LocalFileSource(LinkSource):
