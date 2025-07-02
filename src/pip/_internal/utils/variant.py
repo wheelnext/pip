@@ -49,7 +49,7 @@ class VariantJson:
 def get_variants_json_filename(wheel: Wheel) -> str:
     # these are normalized, but with .replace("_", "-")
     return (
-        f"{wheel.name.replace("-", "_")}-{wheel.version.replace("-", "_")}-"
+        f"{wheel.name.replace('-', '_')}-{wheel.version.replace('-', '_')}-"
         "variants.json"
     )
 
