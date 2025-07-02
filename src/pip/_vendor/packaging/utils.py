@@ -101,7 +101,7 @@ def parse_wheel_filename(
 
     filename = filename[:-4]
     dashes = filename.count("-")
-    if dashes not in (4, 5):
+    if dashes not in (4, 5, 6):
         raise InvalidWheelFilename(
             f"Invalid wheel filename (wrong number of parts): {filename!r}"
         )
@@ -120,14 +120,22 @@ def parse_wheel_filename(
             f"Invalid wheel filename (invalid version): {filename!r}"
         ) from e
 
-    if dashes == 5:
+    if dashes in (5, 6):
         build_part = parts[2]
         build_match = _build_tag_regex.match(build_part)
         if build_match is None:
-            raise InvalidWheelFilename(
-                f"Invalid build number: {build_part} in {filename!r}"
-            )
-        build = cast(BuildTag, (int(build_match.group(1)), build_match.group(2)))
+            # When there are 5 dashes, not matching the build number could be OK because
+            # we could have a variant tag.
+            variant_hash_pattern = r'[a-zA-Z0-9]{8}'
+            possible_variant_hash = parts[-1].split("-")[-1]
+            if dashes == 6 or (dashes == 5 and not re.match(variant_hash_pattern, possible_variant_hash)):
+                raise InvalidWheelFilename(
+                    f"Invalid build number: {build_part} in {filename!r}"
+                )
+            else:
+                build = ()
+        else:
+            build = cast(BuildTag, (int(build_match.group(1)), build_match.group(2)))
     else:
         build = ()
     tags = parse_tag(parts[-1])
