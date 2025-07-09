@@ -288,7 +288,7 @@ class InstallRequirement:
         if self.markers is not None:
             venv_dict = {}
             if variant_desc is not None:
-                venv_dict = get_variant_environment_dict(variant_Desc)
+                venv_dict = get_variant_environment_dict(variant_desc)
             return any(
                 self.markers.evaluate({"extra": extra, **venv_dict}) for extra in extras_requested
             )
