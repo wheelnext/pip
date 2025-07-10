@@ -250,9 +250,10 @@ class _InstallRequirementBackedCandidate(Candidate):
         return dist
 
     def iter_dependencies(self, with_requires: bool) -> Iterable[Optional[Requirement]]:
-        requires = self.dist.iter_dependencies() if with_requires else ()
+        variant_desc = get_variant_description_for_link(self._link)
+        requires = self.dist.iter_dependencies(variant_desc=variant_desc) if with_requires else ()
         for r in requires:
-            yield from self._factory.make_requirements_from_spec(str(r), self._ireq, variant_desc=get_variant_description_for_link(self._link))
+            yield from self._factory.make_requirements_from_spec(str(r), self._ireq, variant_desc=variant_desc)
         yield self._factory.make_requires_python_requirement(self.dist.requires_python)
 
     def get_install_requirement(self) -> Optional[InstallRequirement]:

@@ -30,6 +30,7 @@ from pip._internal.metadata.base import (
 from pip._internal.utils.misc import normalize_path
 from pip._internal.utils.packaging import get_requirement
 from pip._internal.utils.temp_dir import TempDirectory
+from pip._internal.utils.variant import get_variant_environment_dict
 from pip._internal.utils.wheel import parse_wheel, read_wheel_metadata_file
 
 from ._compat import (
@@ -214,7 +215,7 @@ class Distribution(BaseDistribution):
             for extra in self.metadata.get_all("Provides-Extra", [])
         ]
 
-    def iter_dependencies(self, extras: Collection[str] = ()) -> Iterable[Requirement]:
+    def iter_dependencies(self, extras: Collection[str] = (), variant_desc = None) -> Iterable[Requirement]:
         contexts: Sequence[Dict[str, str]] = [{"extra": e} for e in extras]
         for req_string in self.metadata.get_all("Requires-Dist", []):
             # strip() because email.message.Message.get_all() may return a leading \n
@@ -222,7 +223,12 @@ class Distribution(BaseDistribution):
             req = get_requirement(req_string.strip())
             if not req.marker:
                 yield req
-            elif not extras and req.marker.evaluate({"extra": ""}):
-                yield req
-            elif any(req.marker.evaluate(context) for context in contexts):
-                yield req
+            else:
+                venv_dict = {}
+                if variant_desc is not None:
+                    venv_dict = get_variant_environment_dict(variant_desc)
+
+                if not extras and req.marker.evaluate({"extra": "", **venv_dict}):
+                    yield req
+                elif any(req.marker.evaluate({**context, **venv_dict}) for context in contexts):
+                    yield req
