@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from functools import cache
 from typing import TYPE_CHECKING
+import logging
 
 from pip._internal.build_env import BuildEnvironment
 from pip._internal.metadata import FilesystemWheel, get_wheel_distribution
@@ -28,6 +29,9 @@ except ImportError:
         return {}
 
 VARIANT_DESCRIPTIONS: dict[Link, VariantDescription] = {}
+
+variantlib_logger = logging.getLogger("variantlib")
+variantlib_logger.setLevel(logging.ERROR)
 
 
 @dataclass
