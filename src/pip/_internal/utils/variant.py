@@ -3,7 +3,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from functools import cache
 from typing import TYPE_CHECKING
-import logging
 
 from pip._internal.build_env import BuildEnvironment
 from pip._internal.metadata import FilesystemWheel, get_wheel_distribution
@@ -28,8 +27,6 @@ except ImportError:
     def get_variant_environment_dict(vdesc: Any) -> dict[str, str]:
         return {}
 
-logger = logging.getLogger(__name__)
-
 VARIANT_DESCRIPTIONS: dict[Link, VariantDescription] = {}
 
 
@@ -39,7 +36,6 @@ class VariantJson:
     getter: Callable([str], dict)
 
     def json(self) -> dict:
-        logger.info("Fetching %(url)s", {"url": self.url})
         return self.getter(self.url)
 
     def __hash__(self) -> int:
@@ -87,8 +83,6 @@ def get_cached_variant_hashes_by_priority(
                 variants_json=variant_info,
             )
         )
-    if variants:
-        logger.info(f"Total Number of Compatible Variants: {len(variants):,}")  # noqa: G004
     return [*variants, None]
 
 
