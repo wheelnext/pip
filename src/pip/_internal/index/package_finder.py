@@ -896,9 +896,6 @@ class PackageFinder:
         page_links = list(parse_links(index_response))
 
         with indent_log():
-            # This is how evaluate_links gets called in a way that gets the
-            # variants.json file processed for URLs. I need to insert the same
-            # thing for find-links
             package_links = self.evaluate_links(
                 link_evaluator,
                 links=page_links,
@@ -937,7 +934,7 @@ class PackageFinder:
         # Since candidates_from_page does not get used to process file sources
         # from find-links, manually inject evaluate_links calls here.
         _links = [
-            Link(path_to_url(fl.variants_json)) 
+            Link(path_to_url(fl.variants_json))
             for fl in collected_sources.find_links
             if fl.variants_json is not None
         ]
