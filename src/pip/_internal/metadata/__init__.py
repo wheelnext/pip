@@ -27,6 +27,9 @@ def _should_use_importlib_metadata() -> bool:
     By default, pip uses ``importlib.metadata`` on Python 3.11+, and
     ``pkg_resources`` otherwise. This can be overridden by a couple of ways:
 
+    VARIANT HACK: we are forcing importlib.metadata since marker evaluation
+    is broken in pkg_resources.
+
     * If environment variable ``_PIP_USE_IMPORTLIB_METADATA`` is set, it
       dictates whether ``importlib.metadata`` is used, regardless of Python
       version.
@@ -37,8 +40,6 @@ def _should_use_importlib_metadata() -> bool:
     """
     with contextlib.suppress(KeyError, ValueError):
         return bool(strtobool(os.environ["_PIP_USE_IMPORTLIB_METADATA"]))
-    if sys.version_info < (3, 11):
-        return False
     import importlib.metadata
 
     return bool(getattr(importlib.metadata, "_PIP_USE_IMPORTLIB_METADATA", True))
