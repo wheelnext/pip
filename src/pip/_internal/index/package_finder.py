@@ -404,7 +404,7 @@ class CandidateEvaluator:
         specifier: Optional[specifiers.BaseSpecifier] = None,
         hashes: Optional[Hashes] = None,
         variants_json: dict[VariantJson] = {},
-        variant_hash: str | None = None,
+        variant_hash: Optional[str] = None,
         *,
         finder: "PackageFinder",
     ) -> "CandidateEvaluator":
@@ -446,7 +446,7 @@ class CandidateEvaluator:
         allow_all_prereleases: bool = False,
         hashes: Optional[Hashes] = None,
         variants_json: dict[VariantJson] = [],
-        variant_hash: str | None = None,
+        variant_hash: Optional[str] = None,
         *,
         finder: "PackageFinder",
     ) -> None:
@@ -961,7 +961,7 @@ class PackageFinder:
         specifier: Optional[specifiers.BaseSpecifier] = None,
         hashes: Optional[Hashes] = None,
         variants_json: Optional[VariantJson] = None,
-        variant_hash: str | None = None,
+        variant_hash: Optional[str] = None,
         *,
         finder: "PackageFinder",
     ) -> CandidateEvaluator:
@@ -985,7 +985,7 @@ class PackageFinder:
         project_name: str,
         specifier: Optional[specifiers.BaseSpecifier] = None,
         hashes: Optional[Hashes] = None,
-        variant_hash: str | None = None,
+        variant_hash: Optional[str] = None,
     ) -> BestCandidateResult:
         """Find matches for the given project and specifier.
 
