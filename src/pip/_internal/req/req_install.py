@@ -280,7 +280,7 @@ class InstallRequirement:
         specifiers = self.req.specifier
         return len(specifiers) == 1 and next(iter(specifiers)).operator in {"==", "==="}
 
-    def match_markers(self, extras_requested: Optional[Iterable[str]] = None, variant_desc = None) -> bool:
+    def match_markers(self, extras_requested: Optional[Iterable[str]] = None, variant_desc = None, variant_label = None) -> bool:
         if not extras_requested:
             # Provide an extra to safely evaluate the markers
             # without matching any extra
@@ -288,7 +288,7 @@ class InstallRequirement:
         if self.markers is not None:
             venv_dict = {}
             if variant_desc is not None:
-                venv_dict = get_variant_environment_dict(variant_desc)
+                venv_dict = get_variant_environment_dict(variant_desc, variant_label)
             return any(
                 self.markers.evaluate({"extra": extra, **venv_dict}) for extra in extras_requested
             )

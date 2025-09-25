@@ -39,6 +39,7 @@ class PackageDetails(NamedTuple):
     version: Version
     dependencies: List[Requirement]
     variant_desc: Any = None
+    varinat_label: str = None
 
 
 # Shorthands
@@ -62,15 +63,16 @@ def create_package_set_from_installed() -> Tuple[PackageSet, bool]:
             from variantlib.constants import VARIANT_DIST_INFO_FILENAME
             from variantlib.variants_json import VariantsJson
 
-            variant_desc = next(iter(VariantsJson(
+            ((variant_label, variant_desc),) = VariantsJson(
                 json.loads(dist.read_text(VARIANT_DIST_INFO_FILENAME))
-            ).variants.values()))
+            ).variants.items()
         except (FileNotFoundError, ImportError):
+            variant_label = None
             variant_desc = None
         name = dist.canonical_name
         try:
             dependencies = list(dist.iter_dependencies())
-            package_set[name] = PackageDetails(dist.version, dependencies, variant_desc)
+            package_set[name] = PackageDetails(dist.version, dependencies, variant_desc, variant_label)
         except (OSError, ValueError) as e:
             # Don't crash on unreadable or broken metadata.
             logger.warning("Error parsing dependencies of %s: %s", name, e)
@@ -106,8 +108,8 @@ def check_package_set(
                 missed = True
                 if req.marker is not None:
                     env_dict = {}
-                    if package_detail.variant_desc is None:
-                        env_dict = get_variant_environment_dict(package_detail.variant_desc)
+                    if package_detail.variant_desc is not None:
+                        env_dict = get_variant_environment_dict(package_detail.variant_desc, package_detail.variant_label)
                     missed = req.marker.evaluate({"extra": "",
                                                   **env_dict})
                 if missed:

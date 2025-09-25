@@ -25,10 +25,10 @@ try:
     from variantlib.variant_dist_info import VariantDistInfo
     from variantlib.models.variant import VariantDescription
 except ImportError:
-    def get_variant_environment_dict(vdesc: Any) -> dict[str, str]:
+    def get_variant_environment_dict(vdesc: Any, variant_label: str | None) -> dict[str, str]:
         return {}
 
-VARIANT_DESCRIPTIONS: dict[Link, VariantDescription] = {}
+VARIANT_DESCRIPTIONS: dict[Link, tuple[VariantDescription, str]] = {}
 
 variantlib_logger = logging.getLogger("variantlib")
 variantlib_logger.setLevel(logging.ERROR)
@@ -96,22 +96,22 @@ def store_variant_desc(
     wheel: Wheel,
     variants_json: VariantJson | None,
 ) -> None:
-    if wheel.variant_hash in (None, "00000000"):
-        VARIANT_DESCRIPTIONS[link] = None
+    if wheel.variant_hash is None:
+        VARIANT_DESCRIPTIONS[link] = None, None
         return
 
     assert variants_json is not None
     parsed_json = get_variants_json(variants_json)
-    VARIANT_DESCRIPTIONS[link] = parsed_json.variants[wheel.variant_hash]
+    VARIANT_DESCRIPTIONS[link] = parsed_json.variants[wheel.variant_hash], wheel.variant_hash
 
 
-def get_variant_description_for_link(link: Link) -> VariantDescription:
-    return VARIANT_DESCRIPTIONS[link]
+def get_variant_description_for_link(link: Link) -> tuple[VariantDescription, str]:
+    return VARIANT_DESCRIPTIONS.get(link, (None, None))
 
 
 def variant_wheel_supported(wheel: Wheel, link: Link, finder: PackageFinder) -> bool:
     if wheel.variant_hash is None:
-        VARIANT_DESCRIPTIONS[link] = None
+        VARIANT_DESCRIPTIONS[link] = None, None
         return True
 
     if link.scheme != "file":
@@ -119,7 +119,7 @@ def variant_wheel_supported(wheel: Wheel, link: Link, finder: PackageFinder) -> 
 
     wheel_dist = get_wheel_distribution(FilesystemWheel(link.file_path), "")
     variant_info = VariantDistInfo(wheel_dist.read_text(VARIANT_DIST_INFO_FILENAME))
-    VARIANT_DESCRIPTIONS[link] = variant_info.variant_desc
+    VARIANT_DESCRIPTIONS[link] = variant_info.variant_desc, variant_info.variant_label
     build_env = get_build_env(tuple(variant_info.get_provider_requires()), finder)
 
     with build_env:

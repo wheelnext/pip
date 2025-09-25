@@ -215,7 +215,7 @@ class Distribution(BaseDistribution):
             for extra in self.metadata.get_all("Provides-Extra", [])
         ]
 
-    def iter_dependencies(self, extras: Collection[str] = (), variant_desc = None) -> Iterable[Requirement]:
+    def iter_dependencies(self, extras: Collection[str] = (), variant_desc = None, variant_label = None) -> Iterable[Requirement]:
         contexts: Sequence[Dict[str, str]] = [{"extra": e} for e in extras]
         for req_string in self.metadata.get_all("Requires-Dist", []):
             # strip() because email.message.Message.get_all() may return a leading \n
@@ -226,7 +226,7 @@ class Distribution(BaseDistribution):
             else:
                 venv_dict = {}
                 if variant_desc is not None:
-                    venv_dict = get_variant_environment_dict(variant_desc)
+                    venv_dict = get_variant_environment_dict(variant_desc, variant_label)
 
                 if not extras and req.marker.evaluate({"extra": "", **venv_dict}):
                     yield req

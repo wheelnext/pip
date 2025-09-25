@@ -481,7 +481,7 @@ class Factory:
 
     def _make_requirements_from_install_req(
         self, ireq: InstallRequirement, requested_extras: Iterable[str],
-        variant_desc = None,
+        variant_desc = None, variant_label = None,
     ) -> Iterator[Requirement]:
         """
         Returns requirement objects associated with the given InstallRequirement. In
@@ -492,7 +492,7 @@ class Factory:
                 (or link) and one with the extra. This allows centralized constraint
                 handling for the base, resulting in fewer candidate rejections.
         """
-        if not ireq.match_markers(requested_extras, variant_desc=variant_desc):
+        if not ireq.match_markers(requested_extras, variant_desc=variant_desc, variant_label=variant_label):
             logger.info(
                 "Ignoring %s: markers '%s' don't match your environment",
                 ireq.name,
@@ -585,7 +585,7 @@ class Factory:
         specifier: str,
         comes_from: Optional[InstallRequirement],
         requested_extras: Iterable[str] = (),
-        variant_desc = None,
+        variant_desc = None, variant_label = None,
     ) -> Iterator[Requirement]:
         """
         Returns requirement objects associated with the given specifier. In most cases
@@ -597,7 +597,7 @@ class Factory:
                 resulting in fewer candidate rejections.
         """
         ireq = self._make_install_req_from_spec(specifier, comes_from)
-        return self._make_requirements_from_install_req(ireq, requested_extras, variant_desc=variant_desc)
+        return self._make_requirements_from_install_req(ireq, requested_extras, variant_desc=variant_desc, variant_label=variant_label)
 
     def make_requires_python_requirement(
         self,

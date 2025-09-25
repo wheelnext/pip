@@ -238,7 +238,7 @@ class Distribution(BaseDistribution):
         feed_parser.feed(metadata)
         return feed_parser.close()
 
-    def iter_dependencies(self, extras: Collection[str] = (), variant_desc = None) -> Iterable[Requirement]:
+    def iter_dependencies(self, extras: Collection[str] = (), variant_desc = None, variant_label = None) -> Iterable[Requirement]:
         # we ignore variant_desc here, and let pip filter them later
         if extras:
             relevant_extras = set(self._extra_mapping) & set(
