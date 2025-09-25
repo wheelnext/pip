@@ -218,7 +218,9 @@ def _normalize(*values: str, key: str) -> tuple[str, ...]:
     if key == "extra":
         return tuple(canonicalize_name(v) for v in values)
 
-    if key.startswith("variant_"):
+    if key in (
+        "variant_namespaces", "variant_features", "variant_properties"
+    ):
         return tuple(_canonicalize_variant_metadata(v, key) for v in values)
 
     # other environment markers don't have such standards
@@ -333,6 +335,7 @@ class Marker:
         """
         current_environment = cast("dict[str, str]", default_environment())
         current_environment["extra"] = ""
+        current_environment["variant_label"] = ""
         current_environment["variant_namespaces"] = frozenset()
         current_environment["variant_features"] = frozenset()
         current_environment["variant_properties"] = frozenset()

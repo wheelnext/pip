@@ -69,7 +69,7 @@ DEFAULT_RULES: dict[str, str | re.Pattern[str]] = {
                 |python_implementation
                 |implementation_(name|version)
                 |extra
-                |variant_(namespaces|features|properties)
+                |variant_(label|namespaces|features|properties)
             )\b
         """,
         re.VERBOSE,
