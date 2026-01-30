@@ -1,32 +1,37 @@
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from functools import cache
 from typing import TYPE_CHECKING
-import logging
 
 from pip._internal.build_env import BuildEnvironment
 from pip._internal.metadata import FilesystemWheel, get_wheel_distribution
 
 if TYPE_CHECKING:
-    from typing import Any
-    from typing import Callable
+    from typing import Any, Callable
 
-    from pip._internal.package_finder import PackageFinder
+    from pip._internal.index.package_finder import PackageFinder
     from pip._internal.models.link import Link
     from pip._internal.models.wheel import Wheel
 
 try:
-    from variantlib.api import get_variant_environment_dict
-    from variantlib.api import get_variants_by_priority
-    from variantlib.api import check_variant_supported
+    from variantlib.api import (
+        check_variant_supported,
+        get_variant_environment_dict,
+        get_variants_by_priority,
+    )
     from variantlib.constants import VARIANT_DIST_INFO_FILENAME
-    from variantlib.variants_json import VariantsJson
-    from variantlib.variant_dist_info import VariantDistInfo
     from variantlib.models.variant import VariantDescription
+    from variantlib.variant_dist_info import VariantDistInfo
+    from variantlib.variants_json import VariantsJson
 except ImportError:
-    def get_variant_environment_dict(vdesc: Any, variant_label: str | None) -> dict[str, str]:
+
+    def get_variant_environment_dict(
+        vdesc: Any, variant_label: str | None
+    ) -> dict[str, str]:
         return {}
+
 
 VARIANT_DESCRIPTIONS: dict[Link, tuple[VariantDescription, str]] = {}
 
@@ -37,7 +42,7 @@ variantlib_logger.setLevel(logging.ERROR)
 @dataclass
 class VariantJson:
     url: str
-    getter: Callable([str], dict)
+    getter: Callable[[str], dict]
 
     def json(self) -> dict:
         return self.getter(self.url)
@@ -63,9 +68,7 @@ def get_variants_json(variants_json: VariantJson) -> VariantsJson:
 def get_build_env(requires: list[str], finder: PackageFinder) -> BuildEnvironment:
     build_env = BuildEnvironment()
     finder.use_variants = False
-    build_env.install_requirements(
-        finder, requires, "normal", kind="variant providers"
-    )
+    build_env.install_requirements(finder, requires, "normal", kind="variant providers")
     finder.use_variants = True
     return build_env
 
@@ -102,7 +105,10 @@ def store_variant_desc(
 
     assert variants_json is not None
     parsed_json = get_variants_json(variants_json)
-    VARIANT_DESCRIPTIONS[link] = parsed_json.variants[wheel.variant_hash], wheel.variant_hash
+    VARIANT_DESCRIPTIONS[link] = (
+        parsed_json.variants[wheel.variant_hash],
+        wheel.variant_hash,
+    )
 
 
 def get_variant_description_for_link(link: Link) -> tuple[VariantDescription, str]:

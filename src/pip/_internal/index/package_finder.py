@@ -222,20 +222,6 @@ class LinkEvaluator:
                     )
                     return (LinkType.platform_mismatch, reason, None)
 
-                supported_variants = set(
-                    get_cached_variant_hashes_by_priority(
-                        self.variants_json.get(get_variants_json_filename(wheel)),
-                        finder=finder
-                    )
-                )
-                store_variant_desc(link, wheel, self.variants_json.get(get_variants_json_filename(wheel)))
-                if wheel.variant_hash not in supported_variants:
-                    reason = (
-                        f"variant {wheel.variant_hash} is not compatible with "
-                        f"the system"
-                    )
-                    return (LinkType.variant_unsupported, reason, None)
-
                 version = wheel.version
 
         # This should be up by the self.ok_binary check, but see issue 2700.
@@ -507,7 +493,161 @@ class CandidateEvaluator:
             project_name=self._project_name,
         )
 
-        return sorted(filtered_applicable_candidates, key=self._sort_key)
+        return self._sort_candidates_lazy_variants(filtered_applicable_candidates)
+
+    def _sort_candidates_lazy_variants(
+        self,
+        candidates: List[InstallationCandidate],
+    ) -> List[InstallationCandidate]:
+        """
+        Sort candidates with lazy variant loading.
+
+        Only fetches variants.json for versions we actually need to consider,
+        avoiding expensive HTTP requests for all versions on the index.
+
+        NOTE: Returns candidates in ASCENDING order (earlier versions first)
+        to match the original behavior. The factory.py code expects this and
+        uses reversed() to iterate in descending order.
+        """
+        if not candidates:
+            return []
+
+        # Phase 1: Sort by everything EXCEPT variant priority (ascending order)
+        # This groups candidates by version without fetching variants.json
+        phase1_sorted = sorted(candidates, key=self._sort_key_no_variant)
+
+        # Group candidates by version (they're already sorted, so we can iterate)
+        result = []
+        processed_versions: Set[_BaseVersion] = set()
+
+        for candidate in phase1_sorted:
+            if candidate.version in processed_versions:
+                continue
+
+            # Get all candidates for this version
+            version_candidates = [
+                c for c in phase1_sorted if c.version == candidate.version
+            ]
+            processed_versions.add(candidate.version)
+
+            # Phase 2: For this version, apply variant filtering and sorting
+            # This fetches variants.json only for THIS version
+            variant_sorted = self._filter_and_sort_by_variant(version_candidates)
+            result.extend(variant_sorted)
+
+        return result
+
+    def _sort_key_no_variant(
+        self, candidate: InstallationCandidate
+    ) -> Tuple[int, int, int, _BaseVersion, int, BuildTag]:
+        """
+        Sort key that excludes variant priority (no variants.json fetch).
+        Used for initial sorting before lazy variant loading.
+        """
+        valid_tags = self._supported_tags
+        support_num = len(valid_tags)
+        build_tag: BuildTag = ()
+        binary_preference = 0
+        link = candidate.link
+
+        if link.is_wheel:
+            wheel = Wheel(link.filename)
+            try:
+                pri = -(
+                    wheel.find_most_preferred_tag(
+                        valid_tags, self._wheel_tag_preferences
+                    )
+                )
+            except ValueError:
+                pri = -(support_num + 1)  # Worst priority for unsupported tags
+            if self._prefer_binary:
+                binary_preference = 1
+            if wheel.build_tag is not None:
+                match = re.match(r"^(\d+)(.*)$", wheel.build_tag)
+                assert match is not None, "guaranteed by filename validation"
+                build_tag_groups = match.groups()
+                build_tag = (int(build_tag_groups[0]), build_tag_groups[1])
+        else:  # sdist
+            pri = -(support_num)
+
+        has_allowed_hash = int(link.is_hash_allowed(self._hashes))
+        yank_value = -1 * int(link.is_yanked)
+
+        return (
+            has_allowed_hash,
+            yank_value,
+            binary_preference,
+            candidate.version,
+            pri,
+            build_tag,
+        )
+
+    def _filter_and_sort_by_variant(
+        self,
+        candidates: List[InstallationCandidate],
+    ) -> List[InstallationCandidate]:
+        """
+        Filter out unsupported variants and sort by variant priority.
+        This fetches variants.json only for the version of these candidates.
+
+        NOTE: Returns candidates in ASCENDING order to match original behavior.
+        """
+        if not candidates:
+            return []
+
+        # Separate variant and non-variant candidates
+        variant_candidates = [c for c in candidates if c.variant_hash is not None]
+        non_variant_candidates = [c for c in candidates if c.variant_hash is None]
+
+        if not variant_candidates:
+            # No variant wheels, just return sorted by tag priority (ascending)
+            return sorted(candidates, key=self._sort_key_no_variant)
+
+        # Get the wheel to look up variants.json (all should be same version)
+        sample_wheel = Wheel(variant_candidates[0].link.filename)
+        variants_json_file = self._variants_json.get(
+            get_variants_json_filename(sample_wheel)
+        )
+
+        if variants_json_file is None:
+            # No variants.json found, treat variant wheels as unsupported
+            return sorted(non_variant_candidates, key=self._sort_key_no_variant)
+
+        # NOW we fetch variants.json (only for this one version!)
+        supported_variants = get_cached_variant_hashes_by_priority(
+            variants_json_file,
+            finder=self._finder,
+        )
+        supported_set = set(supported_variants)
+
+        # Filter to only supported variants
+        supported_variant_candidates = [
+            c for c in variant_candidates if c.variant_hash in supported_set
+        ]
+
+        # Store variant descriptions for supported candidates
+        for c in supported_variant_candidates:
+            wheel = Wheel(c.link.filename)
+            store_variant_desc(c.link, wheel, variants_json_file)
+
+        # Sort supported variants by priority (ascending order)
+        def variant_sort_key(c: InstallationCandidate) -> Tuple:
+            base_key = self._sort_key_no_variant(c)
+            try:
+                variant_pri = -supported_variants.index(c.variant_hash)
+            except ValueError:
+                variant_pri = -sys.maxsize
+            # Insert variant_pri after version (index 3) in the sort key
+            return (*base_key[:4], variant_pri, *base_key[4:])
+
+        sorted_variants = sorted(supported_variant_candidates, key=variant_sort_key)
+
+        # Combine: non-variant wheels first, then variant wheels (ascending order)
+        # This matches original behavior where sdists come before wheels in ascending sort
+        return (
+            sorted(non_variant_candidates, key=self._sort_key_no_variant)
+            + sorted_variants
+        )
 
     def _sort_key(self, candidate: InstallationCandidate) -> CandidateSortingKey:
         """
@@ -548,6 +688,7 @@ class CandidateEvaluator:
             # can raise InvalidWheelFilename
             wheel = Wheel(link.filename)
 
+            # Get supported variants (should be cached from lazy loading phase)
             supported_variants = get_cached_variant_hashes_by_priority(
                 self._variants_json.get(get_variants_json_filename(wheel)),
                 finder=self._finder,
@@ -559,12 +700,17 @@ class CandidateEvaluator:
                         valid_tags, self._wheel_tag_preferences
                     )
                 )
-                variant_pri = -supported_variants.index(wheel.variant_hash)
             except ValueError:
                 raise UnsupportedWheel(
                     f"{wheel.filename} is not a supported wheel for this platform. It "
                     "can't be sorted."
                 )
+
+            # Handle variant priority gracefully - unsupported variants get lowest priority
+            try:
+                variant_pri = -supported_variants.index(wheel.variant_hash)
+            except ValueError:
+                variant_pri = -sys.maxsize  # Lowest priority for unsupported variants
             if self._prefer_binary:
                 binary_preference = 1
             if wheel.build_tag is not None:
