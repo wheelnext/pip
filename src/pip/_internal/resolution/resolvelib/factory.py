@@ -172,6 +172,15 @@ class Factory:
         except KeyError:
             base = AlreadyInstalledCandidate(dist, template, factory=self)
             self._installed_candidate_cache[dist.canonical_name] = base
+        if not extras and not template.extras:
+            default_extras = frozenset(
+                canonicalize_name(e) for e in dist.iter_default_extras()
+            )
+            if default_extras:
+                template.extras = default_extras
+                if template.req is not None:
+                    template.req.extras = default_extras
+                extras = default_extras
         if not extras:
             return base
         return self._make_extras_candidate(base, extras, comes_from=template)
