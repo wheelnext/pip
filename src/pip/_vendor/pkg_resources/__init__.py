@@ -3326,7 +3326,10 @@ class Distribution:
 
     @property
     def default_extras_require(self):
-        return self._parsed_pkg_info.get_all('Default-Extra') or []
+        info = getattr(self, '_parsed_pkg_info', None)
+        if info is None:
+            return []
+        return info.get_all('Default-Extra') or []
 
 
 class EggInfoDistribution(Distribution):
