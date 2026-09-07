@@ -76,33 +76,23 @@ def get_cached_variant_hashes_by_priority(
     finder: PackageFinder,
 ) -> list[str]:
     if variants_json is None:
-        return [None]
+        return []
 
     variant_info = get_variants_json(variants_json)
     build_env = get_build_env(tuple(variant_info.get_provider_requires()), finder)
 
     with build_env:
-        variants = list(
-            get_variants_by_priority(
-                variants_json=variant_info,
-            )
+        return get_variants_by_priority(
+            variants_json=variant_info,
         )
-    return [*variants, None]
 
 
-@cache
 def store_variant_desc(
     link: Link,
-    wheel: Wheel,
-    variants_json: VariantJson | None,
+    vdesc: VariantDescription | None,
+    label: str | None,
 ) -> None:
-    if wheel.variant_hash is None:
-        VARIANT_DESCRIPTIONS[link] = None, None
-        return
-
-    assert variants_json is not None
-    parsed_json = get_variants_json(variants_json)
-    VARIANT_DESCRIPTIONS[link] = parsed_json.variants[wheel.variant_hash], wheel.variant_hash
+    VARIANT_DESCRIPTIONS[link] = vdesc, label
 
 
 def get_variant_description_for_link(link: Link) -> tuple[VariantDescription, str]:

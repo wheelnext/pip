@@ -222,13 +222,13 @@ class LinkEvaluator:
                     )
                     return (LinkType.platform_mismatch, reason, None)
 
-                supported_variants = set(
-                    get_cached_variant_hashes_by_priority(
+                supported_variants = {
+                    **{vdesc.label: vdesc for vdesc in get_cached_variant_hashes_by_priority(
                         self.variants_json.get(get_variants_json_filename(wheel)),
                         finder=finder
-                    )
-                )
-                store_variant_desc(link, wheel, self.variants_json.get(get_variants_json_filename(wheel)))
+                    )},
+                    None: None
+                }
                 if wheel.variant_hash not in supported_variants:
                     reason = (
                         f"variant {wheel.variant_hash} is not compatible with "
@@ -236,6 +236,8 @@ class LinkEvaluator:
                     )
                     return (LinkType.variant_unsupported, reason, None)
 
+                vdesc = supported_variants[wheel.variant_hash]
+                store_variant_desc(link, vdesc, wheel.variant_hash)
                 version = wheel.version
 
         # This should be up by the self.ok_binary check, but see issue 2700.
@@ -548,10 +550,14 @@ class CandidateEvaluator:
             # can raise InvalidWheelFilename
             wheel = Wheel(link.filename)
 
-            supported_variants = get_cached_variant_hashes_by_priority(
-                self._variants_json.get(get_variants_json_filename(wheel)),
-                finder=self._finder,
-            )
+            supported_variants = [
+                *(vdesc.label for vdesc in
+                get_cached_variant_hashes_by_priority(
+                    self._variants_json.get(get_variants_json_filename(wheel)),
+                    finder=self._finder,
+                )),
+                None
+            ]
 
             try:
                 pri = -(
