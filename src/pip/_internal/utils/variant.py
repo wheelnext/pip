@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     from pip._internal.models.wheel import Wheel
 
 try:
-    from variantlib.api import get_variant_environment_dict
+    from variantlib.api import get_variant_environment_dict as _get_variant_environment_dict
     from variantlib.api import get_variants_by_priority
     from variantlib.api import check_variant_supported
     from variantlib.constants import VARIANT_DIST_INFO_FILENAME
@@ -27,6 +27,10 @@ try:
 except ImportError:
     def get_variant_environment_dict(vdesc: Any, variant_label: str | None) -> dict[str, str]:
         return {}
+else:
+    def get_variant_environment_dict(vdesc: Any, variant_label: str | None) -> dict[str, str]:
+        assert vdesc.label == variant_label
+        return _get_variant_environment_dict(vdesc)
 
 VARIANT_DESCRIPTIONS: dict[Link, tuple[VariantDescription, str]] = {}
 
