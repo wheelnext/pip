@@ -113,8 +113,10 @@ def variant_wheel_supported(wheel: Wheel, link: Link, finder: PackageFinder) -> 
 
     wheel_dist = get_wheel_distribution(FilesystemWheel(link.file_path), "")
     variant_info = VariantDistInfo(wheel_dist.read_text(VARIANT_DIST_INFO_FILENAME))
-    VARIANT_DESCRIPTIONS[link] = variant_info.variant_desc, variant_info.variant_label
     build_env = get_build_env(tuple(variant_info.get_provider_requires()), finder)
 
     with build_env:
-        return check_variant_supported(variant_info=variant_info)
+        vdesc = check_variant_supported(variant_info=variant_info)
+
+    VARIANT_DESCRIPTIONS[link] = vdesc, variant_info.variant_label
+    return vdesc
